@@ -1,0 +1,13 @@
+{
+  "name": "innovative-bio-inventory-api",
+  "version": "1.0.0",
+  "description": "Inventory API for InnovativeBioScience Custom GPT",
+  "main": "server-native.js",
+  "scripts": {
+    "start": "node server-native.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {}
+}
