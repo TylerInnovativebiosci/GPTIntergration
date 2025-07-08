@@ -1,0 +1,13 @@
+{
+  "name": "gpt-integration-api",
+  "version": "1.0.0",
+  "description": "Custom GPT Integration API for InnovativeBioScience",
+  "main": "server-native.js",
+  "scripts": {
+    "start": "node server-native.js"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {}
+}
