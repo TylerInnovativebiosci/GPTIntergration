@@ -283,6 +283,66 @@ async function testPinecone() {
   }
 }
 
+// GoHighLevel API request helper
+async function makeGHLRequest(path, options = {}) {
+  if (!process.env.GHL_API_KEY) {
+    throw new Error('GHL_API_KEY not configured');
+  }
+  
+  if (!process.env.GHL_LOCATION_ID) {
+    throw new Error('GHL_LOCATION_ID not configured');
+  }
+  
+  const baseUrl = process.env.GHL_BASE_URL || 'https://services.leadconnectorhq.com';
+  const url = new URL(`${baseUrl}${path}`);
+  
+  // Add query params if provided
+  if (options.query) {
+    Object.entries(options.query).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        url.searchParams.append(key, value);
+      }
+    });
+  }
+  
+  const requestOptions = {
+    hostname: url.hostname,
+    path: url.pathname + url.search,
+    method: options.method || 'GET',
+    headers: {
+      'Authorization': `Bearer ${process.env.GHL_API_KEY}`,
+      'Version': '2021-07-28',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      ...options.headers
+    },
+    timeout: 15000
+  };
+  
+  if (options.body) {
+    requestOptions.body = JSON.stringify(options.body);
+  }
+  
+  try {
+    const response = await makeHttpsRequest(requestOptions);
+    
+    if (response.status >= 200 && response.status < 300) {
+      return { success: true, data: response.data };
+    } else {
+      return {
+        success: false,
+        error: `GHL API error: ${response.status}`,
+        details: response.data
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: `GHL request failed: ${error.message}`
+    };
+  }
+}
+
 // WooCommerce test function
 async function testWooCommerce() {
   if (!process.env.WC_CONSUMER_KEY || !process.env.WC_CONSUMER_SECRET) {
@@ -443,6 +503,10 @@ const server = http.createServer(async (req, res) => {
         '/health',
         '/api/inventory/check',
         '/api/inventory/low-stock',
+        '/api/ghl/contacts',
+        '/api/ghl/opportunities',
+        '/api/ghl/tasks',
+        '/api/ghl/stats',
         '/api/test/mongodb',
         '/api/test/ghl',
         '/api/test/openai',
@@ -501,6 +565,259 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // GoHighLevel Operational Endpoints
+  
+  // GET /api/ghl/contacts - Fetch contacts with search
+  if (req.url.startsWith('/api/ghl/contacts') && req.method === 'GET') {
+    try {
+      const url = new URL(req.url, `http://localhost:${PORT}`);
+      const search = url.searchParams.get('search');
+      const limit = parseInt(url.searchParams.get('limit') || '20');
+      const offset = parseInt(url.searchParams.get('offset') || '0');
+      
+      const query = {
+        locationId: process.env.GHL_LOCATION_ID,
+        limit: Math.min(limit, 100), // Cap at 100
+        skip: offset
+      };
+      
+      if (search) {
+        query.query = search;
+      }
+      
+      const result = await makeGHLRequest('/contacts/', { query });
+      
+      if (result.success) {
+        res.writeHead(200);
+        return res.end(JSON.stringify({
+          success: true,
+          data: result.data.contacts || [],
+          total: result.data.total || 0,
+          limit,
+          offset
+        }));
+      } else {
+        res.writeHead(500);
+        return res.end(JSON.stringify(result));
+      }
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      res.writeHead(500);
+      return res.end(JSON.stringify({
+        success: false,
+        error: error.message
+      }));
+    }
+  }
+  
+  // POST /api/ghl/contacts - Create new contact
+  if (req.url === '/api/ghl/contacts' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', async () => {
+      try {
+        const contactData = JSON.parse(body);
+        
+        // Validate required fields
+        if (!contactData.email && !contactData.phone) {
+          res.writeHead(400);
+          return res.end(JSON.stringify({
+            success: false,
+            error: 'Either email or phone is required'
+          }));
+        }
+        
+        const ghlContact = {
+          locationId: process.env.GHL_LOCATION_ID,
+          firstName: contactData.firstName || '',
+          lastName: contactData.lastName || '',
+          email: contactData.email,
+          phone: contactData.phone,
+          tags: contactData.tags || []
+        };
+        
+        const result = await makeGHLRequest('/contacts/', {
+          method: 'POST',
+          body: ghlContact
+        });
+        
+        if (result.success) {
+          res.writeHead(200);
+          return res.end(JSON.stringify({
+            success: true,
+            data: result.data.contact || result.data
+          }));
+        } else {
+          res.writeHead(500);
+          return res.end(JSON.stringify(result));
+        }
+      } catch (error) {
+        console.error('Error creating contact:', error);
+        res.writeHead(400);
+        return res.end(JSON.stringify({
+          success: false,
+          error: error.message
+        }));
+      }
+    });
+    return;
+  }
+  
+  // GET /api/ghl/opportunities - Fetch open opportunities
+  if (req.url.startsWith('/api/ghl/opportunities') && req.method === 'GET') {
+    try {
+      const url = new URL(req.url, `http://localhost:${PORT}`);
+      const limit = parseInt(url.searchParams.get('limit') || '20');
+      const status = url.searchParams.get('status') || 'open';
+      
+      const query = {
+        locationId: process.env.GHL_LOCATION_ID,
+        limit: Math.min(limit, 100),
+        status: status
+      };
+      
+      const result = await makeGHLRequest('/opportunities/', { query });
+      
+      if (result.success) {
+        const opportunities = result.data.opportunities || [];
+        res.writeHead(200);
+        return res.end(JSON.stringify({
+          success: true,
+          data: opportunities,
+          total: result.data.total || opportunities.length,
+          limit
+        }));
+      } else {
+        res.writeHead(500);
+        return res.end(JSON.stringify(result));
+      }
+    } catch (error) {
+      console.error('Error fetching opportunities:', error);
+      res.writeHead(500);
+      return res.end(JSON.stringify({
+        success: false,
+        error: error.message
+      }));
+    }
+  }
+  
+  // GET /api/ghl/tasks - Fetch tasks
+  if (req.url.startsWith('/api/ghl/tasks') && req.method === 'GET') {
+    try {
+      const url = new URL(req.url, `http://localhost:${PORT}`);
+      const contactId = url.searchParams.get('contactId');
+      const status = url.searchParams.get('status') || 'open';
+      
+      let path = '/contacts/';
+      const query = {};
+      
+      if (contactId) {
+        // Get tasks for specific contact
+        path = `/contacts/${contactId}/tasks`;
+      } else {
+        // Get all tasks for location - using contacts endpoint with tasks expanded
+        query.locationId = process.env.GHL_LOCATION_ID;
+        query.limit = 100;
+      }
+      
+      const result = await makeGHLRequest(path, { query });
+      
+      if (result.success) {
+        let tasks = [];
+        
+        if (contactId) {
+          tasks = result.data.tasks || [];
+        } else {
+          // Extract tasks from contacts if fetching location-wide
+          const contacts = result.data.contacts || [];
+          contacts.forEach(contact => {
+            if (contact.tasks && contact.tasks.length > 0) {
+              tasks = tasks.concat(contact.tasks.map(task => ({
+                ...task,
+                contactId: contact.id,
+                contactName: `${contact.firstName} ${contact.lastName}`.trim()
+              })));
+            }
+          });
+        }
+        
+        // Filter by status if specified
+        if (status !== 'all') {
+          tasks = tasks.filter(task => 
+            status === 'open' ? !task.completed : task.completed
+          );
+        }
+        
+        res.writeHead(200);
+        return res.end(JSON.stringify({
+          success: true,
+          data: tasks,
+          total: tasks.length
+        }));
+      } else {
+        res.writeHead(500);
+        return res.end(JSON.stringify(result));
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      res.writeHead(500);
+      return res.end(JSON.stringify({
+        success: false,
+        error: error.message
+      }));
+    }
+  }
+  
+  // GET /api/ghl/stats - Location statistics
+  if (req.url === '/api/ghl/stats' && req.method === 'GET') {
+    try {
+      // Fetch multiple data points in parallel
+      const [contactsResult, opportunitiesResult] = await Promise.all([
+        makeGHLRequest('/contacts/', {
+          query: {
+            locationId: process.env.GHL_LOCATION_ID,
+            limit: 1
+          }
+        }),
+        makeGHLRequest('/opportunities/', {
+          query: {
+            locationId: process.env.GHL_LOCATION_ID,
+            status: 'open',
+            limit: 1
+          }
+        })
+      ]);
+      
+      const stats = {
+        locationId: process.env.GHL_LOCATION_ID,
+        totalContacts: 0,
+        openOpportunities: 0,
+        timestamp: new Date().toISOString()
+      };
+      
+      if (contactsResult.success) {
+        stats.totalContacts = contactsResult.data.total || 0;
+      }
+      
+      if (opportunitiesResult.success) {
+        stats.openOpportunities = opportunitiesResult.data.total || 0;
+      }
+      
+      res.writeHead(200);
+      return res.end(JSON.stringify({
+        success: true,
+        data: stats
+      }));
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      res.writeHead(500);
+      return res.end(JSON.stringify({
+        success: false,
+        error: error.message
+      }));
+    }
+  }
+  
   // Inventory check
   if (req.url === '/api/inventory/check' && req.method === 'POST') {
     let body = '';
@@ -554,6 +871,12 @@ server.listen(PORT, () => {
    • Health: http://localhost:${PORT}/health
    • Check:  http://localhost:${PORT}/api/inventory/check
    • Low:    http://localhost:${PORT}/api/inventory/low-stock
+   
+   GoHighLevel Endpoints:
+   • Contacts:      http://localhost:${PORT}/api/ghl/contacts
+   • Opportunities: http://localhost:${PORT}/api/ghl/opportunities
+   • Tasks:         http://localhost:${PORT}/api/ghl/tasks
+   • Stats:         http://localhost:${PORT}/api/ghl/stats
    
    Integration Test Endpoints:
    • MongoDB:     http://localhost:${PORT}/api/test/mongodb
