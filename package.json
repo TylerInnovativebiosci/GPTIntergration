@@ -1,6 +1,6 @@
 {
        "name": "gpt-integration-api",
-       "version": "1.0.0",
+       "version": "1.0.1",
        "description": "Custom GPT Integration API",
        "main": "server-native.js",
        "scripts": {
