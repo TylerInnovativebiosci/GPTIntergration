@@ -8,10 +8,10 @@ const PORT = process.env.PORT || 3000;
 const GHL_API_KEY = process.env.GHL_API_KEY;
 const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID || 'nWIKiFauModdm8PSLvOs';
 
-// WooCommerce configuration
-const WOO_URL = process.env.WOOCOMMERCE_URL;
-const WOO_CONSUMER_KEY = process.env.WOOCOMMERCE_CONSUMER_KEY;
-const WOO_CONSUMER_SECRET = process.env.WOOCOMMERCE_CONSUMER_SECRET;
+// WooCommerce configuration (using existing WC_ variables)
+const WOO_URL = process.env.WC_API_URL;
+const WOO_CONSUMER_KEY = process.env.WC_CONSUMER_KEY;
+const WOO_CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET;
 
 // Punchout configuration
 const PUNCHOUT_ENABLED = process.env.PUNCHOUT_ENABLED === 'true';
