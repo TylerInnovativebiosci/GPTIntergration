@@ -4,7 +4,7 @@ const url = require('url');
 
 const PORT = process.env.PORT || 3000;
 const GHL_API_KEY = process.env.GHL_API_KEY;
-const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID || 'zLvQZaDZMIyGcJqJFJqx';
+const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID || 'nWIKiFauModdm8PSLvOs';
 
 // Simple GHL API client
 class GHLClient {
