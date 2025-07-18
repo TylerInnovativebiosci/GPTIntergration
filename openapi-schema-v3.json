@@ -1,0 +1,457 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "InnovativeBioScience Complete Integration API",
+    "description": "Comprehensive API for GoHighLevel CRM, WooCommerce e-commerce, and Punchout catalog integration. Designed for ChatGPT to help staff manage all aspects of the business.",
+    "version": "3.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://gptintergration-production.up.railway.app",
+      "description": "Production API"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "checkHealth",
+        "summary": "Check API health and features",
+        "description": "Get API status and list of available features including GHL, WooCommerce, and Punchout status",
+        "responses": {
+          "200": {
+            "description": "API health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string" },
+                    "service": { "type": "string" },
+                    "version": { "type": "string" },
+                    "features": {
+                      "type": "object",
+                      "properties": {
+                        "ghl": { "type": "boolean" },
+                        "woocommerce": { "type": "boolean" },
+                        "punchout": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ghl/contacts": {
+      "get": {
+        "operationId": "searchContacts",
+        "summary": "Search CRM contacts",
+        "description": "Search contacts by email, name, or phone in GoHighLevel CRM",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Search term"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contact list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ghl/tags": {
+      "get": {
+        "operationId": "getTags",
+        "summary": "List all CRM tags",
+        "description": "Get all available tags in the CRM system",
+        "responses": {
+          "200": {
+            "description": "Tag list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/woo/products": {
+      "get": {
+        "operationId": "getProducts",
+        "summary": "Search products",
+        "description": "Get products from WooCommerce store with optional filters",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Search products by name or SKU"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by category"
+          },
+          {
+            "name": "sku",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Find specific product by SKU"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 20 },
+            "description": "Number of products to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "name": { "type": "string" },
+                          "sku": { "type": "string" },
+                          "price": { "type": "string" },
+                          "stock_quantity": { "type": "integer" },
+                          "stock_status": { "type": "string" }
+                        }
+                      }
+                    },
+                    "total": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/woo/orders": {
+      "get": {
+        "operationId": "getOrders",
+        "summary": "Get recent orders",
+        "description": "Retrieve orders from WooCommerce with optional filters",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by order status (processing, completed, pending)"
+          },
+          {
+            "name": "customer",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by customer email or ID"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Orders after this date"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "number": { "type": "string" },
+                          "status": { "type": "string" },
+                          "total": { "type": "string" },
+                          "customer": { "type": "object" },
+                          "date_created": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/woo/inventory": {
+      "get": {
+        "operationId": "checkInventory",
+        "summary": "Check inventory levels",
+        "description": "Get current stock levels with low stock alerts",
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Check specific SKU"
+          },
+          {
+            "name": "low_stock",
+            "in": "query",
+            "schema": { "type": "boolean" },
+            "description": "Show only low stock items"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sku": { "type": "string" },
+                          "name": { "type": "string" },
+                          "quantity": { "type": "integer" },
+                          "status": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/woo/analytics": {
+      "get": {
+        "operationId": "getSalesAnalytics",
+        "summary": "Get sales analytics",
+        "description": "Retrieve sales reports and analytics data",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Start date for analytics"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" },
+            "description": "End date for analytics"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalOrders": { "type": "integer" },
+                        "totalRevenue": { "type": "number" },
+                        "averageOrderValue": { "type": "number" },
+                        "ordersByStatus": { "type": "object" },
+                        "topProducts": { "type": "object" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/punchout/status": {
+      "get": {
+        "operationId": "getPunchoutStatus",
+        "summary": "Check punchout system status",
+        "description": "Get punchout catalog status and active sessions",
+        "responses": {
+          "200": {
+            "description": "Punchout status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "enabled": { "type": "boolean" },
+                    "activeSessions": { "type": "integer" },
+                    "configured": { "type": "boolean" },
+                    "buyers": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/punchout/sessions": {
+      "get": {
+        "operationId": "getPunchoutSessions",
+        "summary": "List active punchout sessions",
+        "description": "View all active punchout shopping sessions",
+        "responses": {
+          "200": {
+            "description": "Session list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "buyer": { "type": "string" },
+                          "created": { "type": "string" },
+                          "itemCount": { "type": "integer" },
+                          "status": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/punchout/orders": {
+      "get": {
+        "operationId": "getPunchoutOrders",
+        "summary": "Get punchout orders",
+        "description": "View orders placed through punchout catalog",
+        "parameters": [
+          {
+            "name": "buyer",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by buyer (e.g., CSU)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Punchout orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/punchout/analytics": {
+      "get": {
+        "operationId": "getPunchoutAnalytics",
+        "summary": "Get institutional sales analytics",
+        "description": "Analytics for B2B/institutional sales through punchout",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Time period (last-30-days, last-quarter, year-to-date)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "B2B analytics data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalSessions": { "type": "integer" },
+                        "completedOrders": { "type": "integer" },
+                        "conversionRate": { "type": "number" },
+                        "topBuyers": { "type": "array", "items": { "type": "object" } },
+                        "totalRevenue": { "type": "number" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
