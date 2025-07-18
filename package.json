@@ -2,9 +2,9 @@
     "name": "simple-webhook-server",
     "version": "1.0.0",
     "description": "Simple webhook server for GoHighLevel",
-    "main": "server-basic.js",
+    "main": "server-native.js",
     "scripts": {
-      "start": "node server-basic.js"
+      "start": "node server-native.js"
     },
     "engines": {
       "node": ">=14.0.0"
